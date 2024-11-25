@@ -1,49 +1,58 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let camera = null;
-let controls = null;
-let renderer = null;
 let scene = null;
+let camera = null;
+let renderer = null;
+let controls = null;
 
-/** 初始化函数 */
 function init() {
-    initScene();        // 初始化场景
-    initCamera();       // 初始化相机
-    initRenderer();     // 初始化渲染器
-    initControls();     // 初始化轨道控制器
-    window.addEventListener('resize', onWindowResize); // 监听窗口变化
-    animate(); // 开始动画循环
+    initScene();
+    initCamera();
+    initLight();
+    initRenderer();
+    initControls();
+    window.addEventListener("resize", onWindowResize);
+    animate();
 }
 
-/** 初始化场景 */
 function initScene() {
     scene = new THREE.Scene();
 
-    // 添加一个旋转的立方体
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const cube = new THREE.Mesh(geometry, material);
-    scene.add(cube);
+    const texLoader = new THREE.TextureLoader();
 
-    // 添加辅助坐标轴
-    const axesHelper = new THREE.AxesHelper(5);
-    scene.add(axesHelper);
+    // 加载纹理
+    const texture = texLoader.load(
+        './map.jpg', // 确保图片路径正确
+        () => console.log("Texture loaded successfully"),
+        undefined,
+        (error) => console.error("Error loading texture:", error)
+    );
+
+    // 创建球体几何
+    const geometry = new THREE.SphereGeometry(5, 32, 32);
+    const material = new THREE.MeshStandardMaterial({ map: texture, }); // 使用 StandardMaterial 更贴合物理光照
+    const sphere = new THREE.Mesh(geometry, material);
+    scene.add(sphere);
 }
 
-/** 初始化相机 */
 function initCamera() {
-    camera = new THREE.PerspectiveCamera(
-        45,
-        window.innerWidth / window.innerHeight,
-        1,
-        1000
-    );
-    camera.position.set(5, 5, 10); // 调整相机位置，更好地观察场景
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(15, 15, 20); // 调整相机位置，便于观察球体
     camera.lookAt(0, 0, 0);
 }
 
-/** 初始化渲染器 */
+function initLight() {
+    // 环境光
+    const ambientLight = new THREE.AmbientLight(0x404040, 1); // 环境光强度设为1
+    scene.add(ambientLight);
+
+    // 平行光
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5); // 更强的平行光
+    directionalLight.position.set(10, 10, 10); // 从右上方照射
+    scene.add(directionalLight);
+}
+
 function initRenderer() {
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio); // 适配高分辨率屏幕
@@ -53,7 +62,6 @@ function initRenderer() {
     document.body.appendChild(renderer.domElement);
 }
 
-/** 初始化轨道控制器 */
 function initControls() {
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;        // 启用惯性阻尼
@@ -67,10 +75,6 @@ function initControls() {
 function animate() {
     requestAnimationFrame(animate);
 
-    // 让整个场景旋转
-    scene.rotation.y += 0.01;
-    scene.rotation.z += 0.005;
-    camera.updateProjectionMatrix();
     controls.update(); // 更新轨道控制器
     renderer.render(scene, camera); // 渲染场景
 }
